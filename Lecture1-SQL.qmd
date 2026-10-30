@@ -1,0 +1,403 @@
+---
+title: "Lecture 1: BigQuery SQL Basics"
+subtitle: "Exploring the GA4 Google Merchandise Store dataset in BigQuery"
+author: "Ron Sabilla"
+date: today
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    theme: cosmo
+    include-in-header:
+      text: |
+        <style>
+        body, h1, h2, h3, .title, .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        </style>
+    code-copy: true
+    highlight-style: github
+    smooth-scroll: true
+---
+
+# Overview
+
+In this notebook, I walk through the core SQL clauses from Lecture 1 using the GA4 sample ecommerce dataset in BigQuery (`bigquery-public-data.ga4_obfuscated_sample_ecommerce`). This dataset is the GA4 export for the Google Merchandise Store and covers Nov. 1, 2020 to Jan. 31, 2021. Each day of data is stored in its own table, like `events_20201201`.
+
+For each query, I include the code, what it does, the output from BigQuery, and what I noticed in the results.
+
+# Selecting and Filtering Data
+
+## 1. SELECT / FROM / LIMIT
+
+```sql
+SELECT event_date, event_name
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+LIMIT 20;
+```
+
+**What it does:** `SELECT` picks which columns I want (the event date and event name), `FROM` tells BigQuery which table to pull from, and `LIMIT 20` returns only the first 20 rows. It's a quick way to preview what the data looks like.
+
+**Output:**
+
+| Row | event_date | event_name |
+|---:|---|---|
+| 1 | 20201105 | page_view |
+| 2 | 20201105 | user_engagement |
+| 3 | 20201105 | session_start |
+| 4 | 20201105 | page_view |
+| 5 | 20201105 | page_view |
+| 6 | 20201105 | user_engagement |
+| 7 | 20201105 | user_engagement |
+| 8 | 20201105 | first_visit |
+| 9 | 20201105 | session_start |
+| 10 | 20201105 | user_engagement |
+| 11 | 20201105 | session_start |
+| 12 | 20201105 | first_visit |
+| 13 | 20201105 | page_view |
+| 14 | 20201105 | view_item |
+| 15 | 20201105 | scroll |
+| 16 | 20201105 | page_view |
+| 17 | 20201105 | user_engagement |
+| 18 | 20201105 | user_engagement |
+| 19 | 20201105 | page_view |
+| 20 | 20201105 | user_engagement |
+
+**What I noticed:** Each row is one event, like a page view or a session start. Since there's no `ORDER BY`, BigQuery returns whichever 20 rows it reads first, so running the same query again can return rows from a different day. When I ran it twice, I got rows from Nov. 5, 2020 one time and Jan. 15, 2021 the other. This query also processed about 94 MB even though it only returned 20 rows, because `LIMIT` doesn't reduce how much data gets scanned.
+
+## 2. WHERE Filters Rows
+
+```sql
+SELECT event_date, event_name, user_pseudo_id
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE event_name = 'purchase'
+LIMIT 50;
+```
+
+**What it does:** `WHERE` keeps only the rows that match a condition. Here, it returns only purchase events, along with the `user_pseudo_id`, which is the anonymous ID GA4 gives each user.
+
+**Output:**
+
+::: {.callout-note collapse="true" title="Show all 50 rows"}
+| Row | event_date | event_name | user_pseudo_id |
+|---:|---|---|---|
+| 1 | 20210115 | purchase | 1052855.9145777052 |
+| 2 | 20210115 | purchase | 2095299.8404862362 |
+| 3 | 20210115 | purchase | 2095299.8404862362 |
+| 4 | 20210115 | purchase | 2095299.8404862362 |
+| 5 | 20210115 | purchase | 2095299.8404862362 |
+| 6 | 20210115 | purchase | 2095299.8404862362 |
+| 7 | 20210115 | purchase | 2095299.8404862362 |
+| 8 | 20210115 | purchase | 5310673.5893788139 |
+| 9 | 20210115 | purchase | 7309138.5083786544 |
+| 10 | 20210115 | purchase | 8327781.0896379000 |
+| 11 | 20210115 | purchase | 19173235.3605594670 |
+| 12 | 20210115 | purchase | 19173235.3605594670 |
+| 13 | 20210115 | purchase | 22753922.9124622984 |
+| 14 | 20210115 | purchase | 22909370.2921134609 |
+| 15 | 20210115 | purchase | 33411958.7357803214 |
+| 16 | 20210115 | purchase | 39843505.6953825231 |
+| 17 | 20210115 | purchase | 40037626.5183269370 |
+| 18 | 20210115 | purchase | 46220931.9485309955 |
+| 19 | 20210115 | purchase | 49824355.4882118513 |
+| 20 | 20210115 | purchase | 56892325.6022498962 |
+| 21 | 20210115 | purchase | 57342905.1174047056 |
+| 22 | 20210115 | purchase | 59409935.1803617257 |
+| 23 | 20210115 | purchase | 73574974.1950894507 |
+| 24 | 20210115 | purchase | 77637054.0215352743 |
+| 25 | 20210115 | purchase | 2118084278.6088055731 |
+| 26 | 20210115 | purchase | 7385163302.4274482131 |
+| 27 | 20210115 | purchase | 1835311.3955349126 |
+| 28 | 20210115 | purchase | 2221352.0772999791 |
+| 29 | 20210115 | purchase | 9081882.0797388482 |
+| 30 | 20210115 | purchase | 59487571.9263599382 |
+| 31 | 20210115 | purchase | 74338699.5616778994 |
+| 32 | 20210115 | purchase | 79553059.4531556375 |
+| 33 | 20210115 | purchase | 84080911.7958476288 |
+| 34 | 20210115 | purchase | 4787327.5696813276 |
+| 35 | 20210115 | purchase | 6008274.6681672862 |
+| 36 | 20210115 | purchase | 7487576.1318301102 |
+| 37 | 20210115 | purchase | 19173235.3605594670 |
+| 38 | 20210115 | purchase | 30682974.8537804631 |
+| 39 | 20210115 | purchase | 46220931.9485309955 |
+| 40 | 20210115 | purchase | 91973717.6924755137 |
+| 41 | 20210115 | purchase | 4362150.8708618344 |
+| 42 | 20210115 | purchase | 68720586.9636644846 |
+| 43 | 20210115 | purchase | 2095299.8404862362 |
+| 44 | 20210115 | purchase | 59199504.6442886361 |
+| 45 | 20210115 | purchase | 5762277.1115500664 |
+| 46 | 20210115 | purchase | 6853761656.0131222850 |
+| 47 | 20210115 | purchase | 41509908.7423660369 |
+| 48 | 20210113 | purchase | 1597302.4432852477 |
+| 49 | 20210113 | purchase | 1827796.6933009711 |
+| 50 | 20210113 | purchase | 2221352.0772999791 |
+
+:::
+
+**What I noticed:** Every row now says `purchase`, so the filter worked. The 50 rows only come from 40 different users, and one user (`2095299.8404862362`) shows up 7 times on Jan. 15, 2021. That means one person can trigger several purchase events, so counting purchase rows is not the same as counting buyers.
+
+## 3. ORDER BY Sorts Results
+
+```sql
+SELECT event_date, event_timestamp, event_name
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE event_name = 'purchase'
+ORDER BY event_timestamp DESC
+LIMIT 20;
+```
+
+**What it does:** `ORDER BY event_timestamp DESC` sorts the purchase events from newest to oldest. `DESC` means descending; `ASC` (the default) would go oldest to newest.
+
+**Output:**
+
+| Row | event_date | event_timestamp | event_name |
+|---:|---|---|---|
+| 1 | 20210131 | 1612136266409473 | purchase |
+| 2 | 20210131 | 1612133791390073 | purchase |
+| 3 | 20210131 | 1612131652023366 | purchase |
+| 4 | 20210131 | 1612131304089602 | purchase |
+| 5 | 20210131 | 1612113158897837 | purchase |
+| 6 | 20210131 | 1612110427196623 | purchase |
+| 7 | 20210131 | 1612100114724035 | purchase |
+| 8 | 20210131 | 1612099742327463 | purchase |
+| 9 | 20210131 | 1612096525175653 | purchase |
+| 10 | 20210131 | 1612089267439836 | purchase |
+| 11 | 20210131 | 1612087778385643 | purchase |
+| 12 | 20210131 | 1612086801108235 | purchase |
+| 13 | 20210131 | 1612080715039404 | purchase |
+| 14 | 20210131 | 1612079647072428 | purchase |
+| 15 | 20210131 | 1612074300030526 | purchase |
+| 16 | 20210131 | 1612073198770090 | purchase |
+| 17 | 20210131 | 1612060092506128 | purchase |
+| 18 | 20210131 | 1612059831958909 | purchase |
+| 19 | 20210131 | 1612057123353508 | purchase |
+| 20 | 20210130 | 1612042693988852 | purchase |
+
+**What I noticed:** The most recent purchases are all from Jan. 31, 2021, the last day of the dataset. The timestamps are long numbers like `1612136266409473`, which are hard to read. That's what the next query fixes.
+
+### Making Timestamps Readable
+
+```sql
+SELECT TIMESTAMP_MICROS(event_timestamp) AS event_time,
+       event_name
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+ORDER BY event_timestamp DESC
+LIMIT 10;
+```
+
+**What it does:** GA4 stores timestamps as microseconds since Jan. 1, 1970. `TIMESTAMP_MICROS()` converts them into a normal date and time, and `AS event_time` renames the column.
+
+**Output:**
+
+| Row | event_time | event_name |
+|---:|---|---|
+| 1 | 2021-01-31 23:59:55.412363 UTC | view_promotion |
+| 2 | 2021-01-31 23:59:55.412363 UTC | page_view |
+| 3 | 2021-01-31 23:59:55.412363 UTC | user_engagement |
+| 4 | 2021-01-31 23:59:54.824131 UTC | page_view |
+| 5 | 2021-01-31 23:59:54.824131 UTC | view_promotion |
+| 6 | 2021-01-31 23:59:51.044846 UTC | first_visit |
+| 7 | 2021-01-31 23:59:51.044846 UTC | page_view |
+| 8 | 2021-01-31 23:59:51.044846 UTC | session_start |
+| 9 | 2021-01-31 23:59:40.397192 UTC | first_visit |
+| 10 | 2021-01-31 23:59:40.397192 UTC | session_start |
+
+**What I noticed:** The latest event in the whole dataset happened at 11:59:55 PM UTC on Jan. 31, 2021. Several events share the exact same timestamp (like `page_view`, `view_promotion` and `user_engagement`), because one page load can fire multiple events at once. Times are in UTC, not Pacific time.
+
+# Summarizing Data
+
+## 4. COUNT, SUM, AVG, MIN, MAX
+
+Aggregate functions take many rows and summarize them into a single value.
+
+### Total Events in December 2020
+
+```sql
+SELECT COUNT(*) AS event_count
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20201201' AND '20201231';
+```
+
+**What it does:** `COUNT(*)` counts every row (every event) in December 2020. The `_TABLE_SUFFIX` filter limits the query to the December daily tables only.
+
+**Output:**
+
+| Row | event_count |
+|---:|---|
+| 1 | 1,612,725 |
+
+**What I noticed:** The store logged about 1.6 million events in December 2020.
+
+### Purchase Events in December 2020
+
+```sql
+SELECT COUNT(*) AS purchase_events
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE event_name = 'purchase'
+  AND _TABLE_SUFFIX BETWEEN '20201201' AND '20201231';
+```
+
+**What it does:** Same idea as the last query, but `AND` adds a second condition so it only counts purchase events in December.
+
+**Output:**
+
+| Row | purchase_events |
+|---:|---|
+| 1 | 2,434 |
+
+**What I noticed:** Only 2,434 of the 1,612,725 December events were purchases, which is about 0.15% of all events. Most activity on the site is browsing, not buying.
+
+## 5. GROUP BY Controls the Grain
+
+`GROUP BY` decides what one row in the result represents, such as one row per day or one row per event type.
+
+### Events by Day
+
+```sql
+SELECT event_date, COUNT(*) AS events
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20201201' AND '20201231'
+GROUP BY event_date
+ORDER BY event_date;
+```
+
+**What it does:** Groups December events by date, so each row is one day with its total event count. Sorting by date makes it easy to spot busy and slow days.
+
+**Output:**
+
+::: {.callout-note collapse="true" title="Show all 31 days"}
+| Row | event_date | events |
+|---:|---|---:|
+| 1 | 20201201 | 71,804 |
+| 2 | 20201202 | 66,832 |
+| 3 | 20201203 | 71,689 |
+| 4 | 20201204 | 69,393 |
+| 5 | 20201205 | 49,528 |
+| 6 | 20201206 | 42,828 |
+| 7 | 20201207 | 71,632 |
+| 8 | 20201208 | 92,199 |
+| 9 | 20201209 | 82,315 |
+| 10 | 20201210 | 80,855 |
+| 11 | 20201211 | 75,780 |
+| 12 | 20201212 | 56,146 |
+| 13 | 20201213 | 46,886 |
+| 14 | 20201214 | 66,082 |
+| 15 | 20201215 | 72,774 |
+| 16 | 20201216 | 67,497 |
+| 17 | 20201217 | 63,887 |
+| 18 | 20201218 | 56,742 |
+| 19 | 20201219 | 37,342 |
+| 20 | 20201220 | 30,071 |
+| 21 | 20201221 | 42,623 |
+| 22 | 20201222 | 44,519 |
+| 23 | 20201223 | 40,040 |
+| 24 | 20201224 | 26,139 |
+| 25 | 20201225 | 21,355 |
+| 26 | 20201226 | 22,121 |
+| 27 | 20201227 | 22,496 |
+| 28 | 20201228 | 32,576 |
+| 29 | 20201229 | 33,975 |
+| 30 | 20201230 | 30,062 |
+| 31 | 20201231 | 24,537 |
+
+:::
+
+**What I noticed:** The busiest day was Dec. 8 with 92,199 events, and the slowest was Christmas Day (Dec. 25) with 21,355. Traffic stayed strong in early December and then dropped off after about Dec. 18, which makes sense since holiday shoppers stop ordering once shipping won't arrive before Christmas. The daily counts add up to 1,612,725, which matches the total from query 4.
+
+### Top Event Types
+
+```sql
+SELECT event_name, COUNT(*) AS events
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20201201' AND '20201231'
+GROUP BY event_name
+ORDER BY events DESC
+LIMIT 15;
+```
+
+**What it does:** Groups December events by event name and sorts them from most to least common, showing the top 15 event types.
+
+**Output:**
+
+| Row | event_name | events |
+|---:|---|---:|
+| 1 | page_view | 477,520 |
+| 2 | user_engagement | 401,428 |
+| 3 | scroll | 183,220 |
+| 4 | view_item | 150,458 |
+| 5 | session_start | 131,836 |
+| 6 | first_visit | 96,816 |
+| 7 | view_promotion | 69,430 |
+| 8 | add_to_cart | 35,347 |
+| 9 | select_item | 18,409 |
+| 10 | begin_checkout | 18,177 |
+| 11 | view_search_results | 9,476 |
+| 12 | add_shipping_info | 8,278 |
+| 13 | add_payment_info | 5,933 |
+| 14 | select_promotion | 3,490 |
+| 15 | purchase | 2,434 |
+
+**What I noticed:** `page_view` is the most common event at 477,520. The list also shows the shopping funnel shrinking at each step: 150,458 `view_item` → 35,347 `add_to_cart` → 18,177 `begin_checkout` → 2,434 `purchase`. Only about 23% of item views led to an add to cart.
+
+## 6. HAVING Filters After Grouping
+
+```sql
+SELECT event_name, COUNT(*) AS events
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20201201' AND '20201231'
+GROUP BY event_name
+HAVING COUNT(*) >= 50000
+ORDER BY events DESC;
+```
+
+**What it does:** `HAVING` works like `WHERE`, but it filters after the data has been grouped. Here, it keeps only event types with at least 50,000 events in December. `WHERE` can't do this because the counts don't exist until after `GROUP BY` runs.
+
+**Output:**
+
+| Row | event_name | events |
+|---:|---|---:|
+| 1 | page_view | 477,520 |
+| 2 | user_engagement | 401,428 |
+| 3 | scroll | 183,220 |
+| 4 | view_item | 150,458 |
+| 5 | session_start | 131,836 |
+| 6 | first_visit | 96,816 |
+| 7 | view_promotion | 69,430 |
+
+**What I noticed:** Only 7 event types cleared 50,000 events. They're all browsing and engagement events. None of the checkout events, like `add_to_cart` or `purchase`, made the cut.
+
+# Querying Multiple Days
+
+## 7. Wildcard Tables and \_TABLE_SUFFIX
+
+```sql
+SELECT event_date, COUNT(*) AS events
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20201201' AND '20201207'
+GROUP BY event_date
+ORDER BY event_date;
+```
+
+**What it does:** GA4 exports one table per day. The `*` in `events_*` lets me query many days at once, and `_TABLE_SUFFIX` limits which days get scanned, here Dec. 1 to Dec. 7, 2020. Scanning fewer tables makes the query faster and uses less of my BigQuery quota.
+
+**Output:**
+
+| Row | event_date | events |
+|---:|---|---:|
+| 1 | 20201201 | 71,804 |
+| 2 | 20201202 | 66,832 |
+| 3 | 20201203 | 71,689 |
+| 4 | 20201204 | 69,393 |
+| 5 | 20201205 | 49,528 |
+| 6 | 20201206 | 42,828 |
+| 7 | 20201207 | 71,632 |
+
+**What I noticed:** The numbers match the first seven rows from query 5, but this query only scanned one week of tables instead of the whole month. Traffic dipped on the weekend (Dec. 5 and 6 were a Saturday and Sunday) and bounced back on Monday, Dec. 7.
+
+# Key Takeaways
+
+- Clauses always go in this order: `SELECT` → `FROM` → `WHERE` → `GROUP BY` → `HAVING` → `ORDER BY` → `LIMIT`.
+- `WHERE` filters rows before grouping, and `HAVING` filters after grouping.
+- `GROUP BY` sets the grain, or what one row of the result means.
+- `LIMIT` only cuts down the rows shown. It doesn't reduce how much data BigQuery scans, so `_TABLE_SUFFIX` is the better way to keep queries fast and cheap.
+- In December 2020, the Google Merchandise Store had about 1.6 million events but only 2,434 purchases, with the biggest drop between viewing an item and adding it to the cart.
