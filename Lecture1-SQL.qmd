@@ -3,6 +3,7 @@ title: "Lecture 1: BigQuery SQL Basics"
 subtitle: "Exploring the GA4 Google Merchandise Store dataset in BigQuery"
 author: "Ron Sabilla"
 date: today
+output-file: index.html
 format:
   html:
     embed-resources: true
@@ -401,3 +402,9 @@ ORDER BY event_date;
 - `GROUP BY` sets the grain, or what one row of the result means.
 - `LIMIT` only cuts down the rows shown. It doesn't reduce how much data BigQuery scans, so `_TABLE_SUFFIX` is the better way to keep queries fast and cheap.
 - In December 2020, the Google Merchandise Store had about 1.6 million events but only 2,434 purchases, with the biggest drop between viewing an item and adding it to the cart.
+
+# Links
+
+- [GitHub Pages](https://rsabilla.github.io/IC-CP-W04-BigQuery-SQL-Lecture-1/)
+- [GitHub Repo](https://github.com/rsabilla/IC-CP-W04-BigQuery-SQL-Lecture-1)
+- [SQL File](https://github.com/rsabilla/IC-CP-W04-BigQuery-SQL-Lecture-1/blob/main/Ron-Sabilla-lecture1-ga4.sql)
